@@ -530,7 +530,10 @@ dtb-$(CONFIG_SOC_IMX6UL) += \
 	imx6ul-ccimx6ulstarter.dtb \
 	imx6ul-ccimx6ulstarter-id129.dtb \
 	imx6ul-ccimx6ulstarter-wb.dtb \
-	imx6ul-ccimx6ulstarter-wb-mfg.dtb
+	imx6ul-ccimx6ulstarter-wb-mfg.dtb \
+	imx6ul-custom.dtb \
+	imx6ul-custom-id10.dtb \
+	imx6ul-custom-wb.dtb 
 dtb-$(CONFIG_SOC_IMX6ULL) += \
 	imx6ull-14x14-ddr3-arm2.dtb \
 	imx6ull-14x14-ddr3-arm2-adc.dtb \
