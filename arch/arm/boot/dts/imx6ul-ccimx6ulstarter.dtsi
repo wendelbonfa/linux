@@ -15,8 +15,7 @@
 	digi,machine,name = "ccimx6ulstarter";
 	
 	xbee {
-		//digi,reset-gpio = <&mca_ioexp_gpio 7 GPIO_ACTIVE_HIGH>;
-		digi,reset-gpio = <&mca_ioexp_gpio 7 GPIO_ACTIVE_LOW>;
+		digi,reset-gpio = <&mca_ioexp_gpio 7 GPIO_ACTIVE_HIGH>;		
 	};
 };
 
