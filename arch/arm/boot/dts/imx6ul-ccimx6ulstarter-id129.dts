@@ -82,10 +82,10 @@
 };
 
 /* MCA IO0 connected to Grove ADC connector */
-&mca_adc {
-	digi,adc-ch-list = <0>;
-	digi,adc-vref = <3000000>;
-};
+//&mca_adc {
+//	digi,adc-ch-list = <0>;
+//	digi,adc-vref = <3000000>;
+//};
 
 /* Uncomment to Enable Tamper detection. There are 2 digital (0 and 1) and 2
  * analog (2 and 3) tamper interfaces.
@@ -101,13 +101,16 @@
 
 /* UART2 (Xbee) */
 &uart2 {
+	/* RTS/CTS lines multiplexed with CAN2 */
+	pinctrl-0 = <&pinctrl_uart2_4wires>;
+	uart-has-rtscts;
 	status = "okay";
 };
 
 /* UART4 (Raspberry PI Expansion header) */
-&uart4 {
-	status = "disabled";
-};
+//&uart4 {
+//	status = "disabled";
+//};
 
 /* UART5 (Console) */
 &uart5 {
@@ -124,6 +127,8 @@
 
 /* USDHC2 (microSD) */
 &usdhc2 {
+	pinctrl-assert-gpios = <&gpio5 1 GPIO_ACTIVE_LOW>;
+	broken-cd;	/* no carrier detect line (use polling) */
 	status = "okay";
 };
 
