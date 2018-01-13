@@ -17,14 +17,14 @@
 	xbee {
 		digi,reset-gpio = <&mca_ioexp_gpio 7 GPIO_ACTIVE_HIGH>;
 	};
-//};
+};
 
 /* ECSPI3 (Raspberry PI Expansion header) */
 &ecspi3 {
 	fsl,spi-num-chipselects = <1>;
 	cs-gpios = <&gpio1 20 GPIO_ACTIVE_LOW>;
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_ecspi3_master>;
+	//pinctrl-0 = <&pinctrl_ecspi3_master>;
 	status = "disabled";
 };
 

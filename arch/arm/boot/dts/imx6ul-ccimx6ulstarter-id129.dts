@@ -15,7 +15,7 @@
 /* i.MX6 UltraLite CPU */
 #include "imx6ul.dtsi"
 /* ConnectCore 6UL (wireless/bluetooth variant) */
-//#include "imx6ul-ccimx6ul-wb.dtsi"
+#include "imx6ul-ccimx6ul-wb.dtsi"
 /* ConnectCore 6UL StarterBoard */
 #include "imx6ul-ccimx6ulstarter.dtsi"
 
@@ -32,12 +32,12 @@
 };
 
 &caam_keyblob {
-	status = "disabled";
+	status = "okay";
 };
 
 /* ECSPI3 (as master - Raspberry PI Expansion header) */
 &ecspi3 {
-	status = "disabled";
+	status = "okay";
 
 	/*
 	 * Add your slave devices here. Next is an example of spidev.
@@ -73,7 +73,7 @@
 
 /* CAN1 (Raspberry PI Expansion header) */
 &can1 {
-	status = "disabled";
+	status = "okay";
 };
 
 /* I2C2 (Raspberry PI Expansion header and Grove connector) */
@@ -131,13 +131,13 @@
 };
 
 /* Pin mux configuration */
-//&iomuxc {
-//	imx6ul-ccimx6ul {
-//		pinctrl_adc1: adc1grp {
-//			fsl,pins = <
-//				/* GPIO1_4/ADC1_IN4 (pin 7 of the expansion header) */
-//				MX6UL_PAD_GPIO1_IO04__GPIO1_IO04        0xb0
-//			>;
-//		};
-//	};
-//};
+&iomuxc {
+	imx6ul-ccimx6ul {
+		pinctrl_adc1: adc1grp {
+			fsl,pins = <
+				/* GPIO1_4/ADC1_IN4 (pin 7 of the expansion header) */
+				MX6UL_PAD_GPIO1_IO04__GPIO1_IO04        0xb0
+			>;
+		};
+	};
+};
