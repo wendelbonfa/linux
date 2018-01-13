@@ -17,7 +17,7 @@
 	xbee {
 		digi,reset-gpio = <&mca_ioexp_gpio 7 GPIO_ACTIVE_HIGH>;
 	};
-};
+//};
 
 /* ECSPI3 (Raspberry PI Expansion header) */
 &ecspi3 {
