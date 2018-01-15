@@ -951,9 +951,7 @@ static int xgbe_start(struct xgbe_prv_data *pdata)
 
 	DBGPR("-->xgbe_start\n");
 
-	ret = hw_if->init(pdata);
-	if (ret)
-		return ret;
+	hw_if->init(pdata);
 
 	phy_start(pdata->phydev);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, 2017 Digi International, Inc.
+ * Copyright 2016 Digi International, Inc.
  *
  * The code contained herein is licensed under the GNU General Public
  * License. You may obtain a copy of the GNU General Public License
@@ -20,65 +20,50 @@
 #include "imx6ul-ccimx6ulstarter.dtsi"
 
 /*
+ * Uncomment to enable the i.MX6UL SoC ADCs.
  * Include in adc-ch-list the ADC channels (from 0 to 9) that you want to
  * enable. Note that the iomux has to be configured accordingly in pinctrl_adc1
  * to configure the pad for ADC operation
  */
-&adc1 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_adc1>;
-	adc-ch-list = <4>;
-	status = "disabled";
-};
+//&adc1 {
+//	pinctrl-names = "default";
+//	pinctrl-0 = <&pinctrl_adc1>;
+//	adc-ch-list = <4>;
+//	status = "okay";
+//};
 
 &caam_keyblob {
-	status = "disabled";
+	status = "okay";
 };
 
-/* ECSPI3 (as master - Raspberry PI Expansion header) */
+/* ECSPI3 (Raspberry PI Expansion header) */
 &ecspi3 {
-	status = "disabled";
-
 	/*
-	 * Add your slave devices here. Next is an example of spidev.
-	 * Expect a harmless kernel warning if you enable spidev as slave.
+	 * There are no SPI slave devices on the SBC.
+	 * Enable if adding your slave devices below.
 	 */
-	spidev@0 {
-		reg = <0>;
-		compatible = "spidev";
-		spi-max-frequency = <1000000>;
-	};
-};
+	//status = "okay";
 
-/* ECSPI3 (as slave - Raspberry PI Expansion header) */
-// &ecspi3 {
-// 	pinctrl-0 = <&pinctrl_ecspi3_slave>;
-// 	spi-slave;
-// 	status = "disabled";
-//
-// 	/*
-// 	 * Unique slave node. Property 'compatible' must be set to the
-// 	 * slave driver that will be registered by default.
-// 	 */
-// 	slave@0 {
-// 		reg = <0>;	/* must match the used CS line */
-// 		compatible = "spidev";
-// 		spi-max-frequency = <1000000>;
-// 	};
-// };
+	/* Add your slave devices here. Next is an example of spidev. */
+	//spidev@0 {
+	//	reg = <0>;
+	//	compatible = "spidev";
+	//	spi-max-frequency = <1000000>;
+	//};
+};
 
 &fec1 {
 	status = "okay";
 };
 
 /* CAN1 (Raspberry PI Expansion header) */
-&can1 {
-	status = "disabled";
+&flexcan1 {
+	status = "okay";
 };
 
 /* I2C2 (Raspberry PI Expansion header and Grove connector) */
 &i2c2 {
-	status = "disabled";
+	status = "okay";
 };
 
 /* MCA IO0 connected to Grove ADC connector */
@@ -87,25 +72,15 @@
 	digi,adc-vref = <3000000>;
 };
 
-/* Uncomment to Enable Tamper detection. There are 2 digital (0 and 1) and 2
- * analog (2 and 3) tamper interfaces.
- */
+/* Uncomment to Enable Tamper detection. Two interfaces (0 and 1) are available */
 //&mca_tamper {
-//	digi,tamper-if-list = <0 1 2 3>;
+//	digi,tamper-if-list = <0 1>;
 //};
 
 /* PWM1 (Raspberry PI Expansion header) */
-&pwm1 {
-	status = "disabled";
-};
-
-/* UART2 */
-&uart2 {
-	/* RTS/CTS lines multiplexed with CAN2 */
-	pinctrl-0 = <&pinctrl_uart2_2wires>;
-	//uart-has-rtscts;
-	status = "okay";
-};
+//&pwm1 {
+//	status = "okay";
+//};
 
 /* UART4 (Raspberry PI Expansion header) */
 &uart4 {
@@ -133,11 +108,12 @@
 /* Pin mux configuration */
 &iomuxc {
 	imx6ul-ccimx6ul {
-		pinctrl_adc1: adc1grp {
-			fsl,pins = <
-				/* GPIO1_4/ADC1_IN4 (pin 7 of the expansion header) */
-				MX6UL_PAD_GPIO1_IO04__GPIO1_IO04        0xb0
-			>;
-		};
+		/* Uncomment specific pins of the ADC channels enabled in 'adc-ch-list' */
+		//pinctrl_adc1: adc1grp {
+		//	fsl,pins = <
+		//		/* GPIO1_4/ADC1_IN4 (pin 7 of the expansion header) */
+		//		MX6UL_PAD_GPIO1_IO04__GPIO1_IO04        0xb0
+		//	>;
+		//};
 	};
 };

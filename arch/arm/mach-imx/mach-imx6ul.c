@@ -22,7 +22,6 @@
 
 #include "common.h"
 #include "cpuidle.h"
-#include "hardware.h"
 
 static void __init imx6ul_enet_clk_init(void)
 {
@@ -130,10 +129,7 @@ static inline void imx6ul_enet_init(void)
 {
 	imx6ul_enet_clk_init();
 	imx6ul_enet_phy_init();
-	if (cpu_is_imx6ul())
-		imx6_enet_mac_init("fsl,imx6ul-fec", "fsl,imx6ul-ocotp");
-	else
-		imx6_enet_mac_init("fsl,imx6ul-fec", "fsl,imx6ull-ocotp");
+	imx6_enet_mac_init("fsl,imx6ul-fec", "fsl,imx6ul-ocotp");
 }
 
 static void __init imx6ul_init_machine(void)
@@ -158,44 +154,14 @@ static void __init imx6ul_init_irq(void)
 	irqchip_init();
 }
 
-static void __init imx6ul_xbee_init(void)
-{
-	struct device_node *np;
-	int reset_gpio;
-	enum of_gpio_flags flags;
-
-	np = of_find_node_by_path("/xbee");
-	if (!np)
-		return;
-
-	/* Read the XBee reset gpio */
-	reset_gpio = of_get_named_gpio_flags(np, "digi,reset-gpio", 0, &flags);
-	if (gpio_is_valid(reset_gpio)) {
-		if (!gpio_request_one(reset_gpio, GPIOF_DIR_OUT, "xbee-reset")) {
-			int assert_reset = (flags & OF_GPIO_ACTIVE_LOW);
-
-			gpio_set_value_cansleep(reset_gpio, assert_reset);
-			mdelay(1);
-			gpio_set_value_cansleep(reset_gpio, !assert_reset);
-			gpio_free(reset_gpio);
-		} else {
-			pr_warn("failed to get xbee-reset gpio\n");
-		}
-	}
-
-	of_node_put(np);
-}
-
 static void __init imx6ul_init_late(void)
 {
 	if (IS_ENABLED(CONFIG_ARM_IMX6Q_CPUFREQ)) {
-		if (cpu_is_imx6ul())
-			imx6ul_opp_init();
+		imx6ul_opp_init();
 		platform_device_register_simple("imx6q-cpufreq", -1, NULL, 0);
 	}
 
 	imx6ul_cpuidle_init();
-	imx6ul_xbee_init();
 }
 
 static void __init imx6ul_map_io(void)
@@ -207,7 +173,6 @@ static void __init imx6ul_map_io(void)
 
 static const char *imx6ul_dt_compat[] __initconst = {
 	"fsl,imx6ul",
-	"fsl,imx6ull",
 	NULL,
 };
 

@@ -789,16 +789,13 @@ static void xhci_kill_endpoint_urbs(struct xhci_hcd *xhci,
 			(ep->ep_state & EP_GETTING_NO_STREAMS)) {
 		int stream_id;
 
-		for (stream_id = 1; stream_id < ep->stream_info->num_streams;
+		for (stream_id = 0; stream_id < ep->stream_info->num_streams;
 				stream_id++) {
-			ring = ep->stream_info->stream_rings[stream_id];
-			if (!ring)
-				continue;
-
 			xhci_dbg_trace(xhci, trace_xhci_dbg_cancel_urb,
 					"Killing URBs for slot ID %u, ep index %u, stream %u",
-					slot_id, ep_index, stream_id);
-			xhci_kill_ring_urbs(xhci, ring);
+					slot_id, ep_index, stream_id + 1);
+			xhci_kill_ring_urbs(xhci,
+					ep->stream_info->stream_rings[stream_id]);
 		}
 	} else {
 		ring = ep->ring;
@@ -849,6 +846,17 @@ void xhci_stop_endpoint_command_watchdog(unsigned long arg)
 	spin_lock_irqsave(&xhci->lock, flags);
 
 	ep->stop_cmds_pending--;
+	if (xhci->xhc_state & XHCI_STATE_REMOVING) {
+		spin_unlock_irqrestore(&xhci->lock, flags);
+		return;
+	}
+	if (xhci->xhc_state & XHCI_STATE_DYING) {
+		xhci_dbg_trace(xhci, trace_xhci_dbg_cancel_urb,
+				"Stop EP timer ran, but another timer marked "
+				"xHCI as DYING, exiting.");
+		spin_unlock_irqrestore(&xhci->lock, flags);
+		return;
+	}
 	if (!(ep->stop_cmds_pending == 0 && (ep->ep_state & EP_HALT_PENDING))) {
 		xhci_dbg_trace(xhci, trace_xhci_dbg_cancel_urb,
 				"Stop EP timer ran, but no command pending, "
@@ -1260,54 +1268,41 @@ void xhci_handle_command_timeout(unsigned long data)
 	bool second_timeout = false;
 	xhci = (struct xhci_hcd *) data;
 
-	spin_lock_irqsave(&xhci->lock, flags);
-
-	/*
-	 * If timeout work is pending, or current_cmd is NULL, it means we
-	 * raced with command completion. Command is handled so just return.
-	 */
-	if (!xhci->current_cmd || timer_pending(&xhci->cmd_timer)) {
-		spin_unlock_irqrestore(&xhci->lock, flags);
-		return;
-	}
-
 	/* mark this command to be cancelled */
-	if (xhci->current_cmd->status == COMP_CMD_ABORT)
-		second_timeout = true;
-	xhci->current_cmd->status = COMP_CMD_ABORT;
+	spin_lock_irqsave(&xhci->lock, flags);
+	if (xhci->current_cmd) {
+		if (xhci->current_cmd->status == COMP_CMD_ABORT)
+			second_timeout = true;
+		xhci->current_cmd->status = COMP_CMD_ABORT;
+	}
 
 	/* Make sure command ring is running before aborting it */
 	hw_ring_state = xhci_read_64(xhci, &xhci->op_regs->cmd_ring);
 	if ((xhci->cmd_ring_state & CMD_RING_STATE_RUNNING) &&
 	    (hw_ring_state & CMD_RING_RUNNING))  {
+		spin_unlock_irqrestore(&xhci->lock, flags);
 		xhci_dbg(xhci, "Command timeout\n");
 		ret = xhci_abort_cmd_ring(xhci);
 		if (unlikely(ret == -ESHUTDOWN)) {
 			xhci_err(xhci, "Abort command ring failed\n");
 			xhci_cleanup_command_queue(xhci);
-			spin_unlock_irqrestore(&xhci->lock, flags);
 			usb_hc_died(xhci_to_hcd(xhci)->primary_hcd);
 			xhci_dbg(xhci, "xHCI host controller is dead.\n");
-
-			return;
 		}
-
-		goto time_out_completed;
+		return;
 	}
 
 	/* command ring failed to restart, or host removed. Bail out */
 	if (second_timeout || xhci->xhc_state & XHCI_STATE_REMOVING) {
+		spin_unlock_irqrestore(&xhci->lock, flags);
 		xhci_dbg(xhci, "command timed out twice, ring start fail?\n");
 		xhci_cleanup_command_queue(xhci);
-
-		goto time_out_completed;
+		return;
 	}
 
 	/* command timeout on stopped ring, ring can't be aborted */
 	xhci_dbg(xhci, "Command timeout on stopped ring\n");
 	xhci_handle_stopped_cmd_ring(xhci, xhci->current_cmd);
-
-time_out_completed:
 	spin_unlock_irqrestore(&xhci->lock, flags);
 	return;
 }
@@ -1366,11 +1361,8 @@ static void handle_cmd_completion(struct xhci_hcd *xhci,
 	 */
 	if (cmd_comp_code == COMP_CMD_ABORT) {
 		xhci->cmd_ring_state = CMD_RING_STATE_STOPPED;
-		if (cmd->status == COMP_CMD_ABORT) {
-			if (xhci->current_cmd == cmd)
-				xhci->current_cmd = NULL;
+		if (cmd->status == COMP_CMD_ABORT)
 			goto event_handled;
-		}
 	}
 
 	cmd_type = TRB_FIELD_TO_TYPE(le32_to_cpu(cmd_trb->generic.field[3]));
@@ -1432,8 +1424,6 @@ static void handle_cmd_completion(struct xhci_hcd *xhci,
 		xhci->current_cmd = list_entry(cmd->cmd_list.next,
 					       struct xhci_command, cmd_list);
 		mod_timer(&xhci->cmd_timer, jiffies + XHCI_CMD_DEFAULT_TIMEOUT);
-	} else if (xhci->current_cmd == cmd) {
-		xhci->current_cmd = NULL;
 	}
 
 event_handled:
@@ -2680,29 +2670,27 @@ static int xhci_handle_event(struct xhci_hcd *xhci)
 irqreturn_t xhci_irq(struct usb_hcd *hcd)
 {
 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
-	union xhci_trb *event_ring_deq;
-	irqreturn_t ret = IRQ_NONE;
-	unsigned long flags;
-	dma_addr_t deq;
-	u64 temp_64;
 	u32 status;
+	u64 temp_64;
+	union xhci_trb *event_ring_deq;
+	dma_addr_t deq;
 
-	spin_lock_irqsave(&xhci->lock, flags);
+	spin_lock(&xhci->lock);
 	/* Check if the xHC generated the interrupt, or the irq is shared */
 	status = readl(&xhci->op_regs->status);
-	if (status == 0xffffffff) {
-		ret = IRQ_HANDLED;
-		goto out;
+	if (status == 0xffffffff)
+		goto hw_died;
+
+	if (!(status & STS_EINT)) {
+		spin_unlock(&xhci->lock);
+		return IRQ_NONE;
 	}
-
-	if (!(status & STS_EINT))
-		goto out;
-
 	if (status & STS_FATAL) {
 		xhci_warn(xhci, "WARNING: Host System Error\n");
 		xhci_halt(xhci);
-		ret = IRQ_HANDLED;
-		goto out;
+hw_died:
+		spin_unlock(&xhci->lock);
+		return IRQ_HANDLED;
 	}
 
 	/*
@@ -2732,8 +2720,9 @@ irqreturn_t xhci_irq(struct usb_hcd *hcd)
 		temp_64 = xhci_read_64(xhci, &xhci->ir_set->erst_dequeue);
 		xhci_write_64(xhci, temp_64 | ERST_EHB,
 				&xhci->ir_set->erst_dequeue);
-		ret = IRQ_HANDLED;
-		goto out;
+		spin_unlock(&xhci->lock);
+
+		return IRQ_HANDLED;
 	}
 
 	event_ring_deq = xhci->event_ring->dequeue;
@@ -2758,12 +2747,10 @@ irqreturn_t xhci_irq(struct usb_hcd *hcd)
 	/* Clear the event handler busy flag (RW1C); event ring is empty. */
 	temp_64 |= ERST_EHB;
 	xhci_write_64(xhci, temp_64, &xhci->ir_set->erst_dequeue);
-	ret = IRQ_HANDLED;
 
-out:
-	spin_unlock_irqrestore(&xhci->lock, flags);
+	spin_unlock(&xhci->lock);
 
-	return ret;
+	return IRQ_HANDLED;
 }
 
 irqreturn_t xhci_msi_irq(int irq, void *hcd)

@@ -93,10 +93,6 @@
 			compatible = "digi,mca-cc6ul-gpio";
 			gpio-controller;
 			#gpio-cells = <2>;
-
-			interrupt-parent = <&mca_cc6ul>;
-			interrupt-controller;
-			#interrupt-cells = <2>;
 		};
 
 		rtc {
@@ -280,7 +276,7 @@
 				/* MCA_nINT */
 				MX6UL_PAD_SNVS_TAMPER4__GPIO5_IO04	0xb0b1
 				/* MCA_FW_UPDATE */
-				MX6UL_PAD_NAND_CE1_B__GPIO4_IO14	0x30
+				MX6UL_PAD_NAND_CE1_B__GPIO4_IO14	0xf030
 			>;
 		};
 	};

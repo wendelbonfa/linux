@@ -1,5 +1,5 @@
 /*
- * Copyright 2016, 2017 Digi International, Inc.
+ * Copyright 2016 Digi International, Inc.
  *
  * The code contained herein is licensed under the GNU General Public
  * License. You may obtain a copy of the GNU General Public License
@@ -22,11 +22,6 @@
 		status = "disabled";
 	};
 
-	pxp_v4l2: pxp-v4l2 {
-		compatible = "fsl,imx6ul-pxp-v4l2", "fsl,imx6sx-pxp-v4l2", "fsl,imx6sl-pxp-v4l2";
-		status = "disabled";
-	};
-
 	reg_usb_otg1_vbus: reg_usb_otg1:@0 {
 		compatible = "regulator-fixed";
 		regulator-name = "usb_otg1_vbus";
@@ -34,6 +29,11 @@
 		regulator-max-microvolt = <5000000>;
 		gpio = <&gpio1 4 GPIO_ACTIVE_HIGH>;
 		enable-active-high;
+	};
+
+	pxp_v4l2: pxp-v4l2 {
+		compatible = "fsl,imx6ul-pxp-v4l2", "fsl,imx6sx-pxp-v4l2", "fsl,imx6sl-pxp-v4l2";
+		status = "disabled";
 	};
 
 	sound_max98089: sound-max98089 {
@@ -59,9 +59,6 @@
 		status = "disabled";
 	};
 
-	xbee {
-		digi,reset-gpio = <&mca_ioexp_gpio 7 GPIO_ACTIVE_HIGH>;
-	};
 };
 
 &csi {
@@ -79,7 +76,7 @@
 	fsl,spi-num-chipselects = <1>;
 	cs-gpios = <&gpio3 26 GPIO_ACTIVE_LOW>;
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_ecspi1_master>;
+	pinctrl-0 = <&pinctrl_ecspi1>;
 	status = "disabled";
 };
 
@@ -188,41 +185,16 @@
 			};
 		};
 	};
-
-	mca_ioexp: mca_io@6e {
-		compatible = "digi,mca_ioexp";
-		reg = <0x6e>;
-		interrupt-parent = <&mca_gpio>;
-		interrupts = <0 IRQ_TYPE_EDGE_FALLING>;
-		status = "disabled";
-
-		interrupt-controller;
-		#interrupt-cells = <2>;
-		pinctrl-names = "default";
-
-		mca_ioexp_gpio: gpio {
-			compatible = "digi,mca-ioexp-gpio";
-			gpio-controller;
-			#gpio-cells = <2>;
-
-			interrupt-parent = <&mca_ioexp>;
-			interrupt-controller;
-			#interrupt-cells = <2>;
-		};
-
-		mca_ioexp_adc: adc {
-			compatible = "digi,mca-ioexp-adc";
-			digi,adc-vref = <3300000>;
-		};
-	};
 };
 
 /* Parallel LCD */
 &lcdif {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_lcdif_dat0_17
-		     &pinctrl_lcdif_clken>;
-	display = <&f07a0102>;
+		     &pinctrl_lcdif_clken
+		     &pinctrl_lcdif_hvsync>;
+	lcd-supply = <&ldo4_ext>;	/* BU90T82 LVDS bridge power */
+	display = <&f10a0102>;
 	status = "disabled";
 
 	f07a0102: display@0 {
@@ -270,79 +242,11 @@
 			};
 		};
 	};
-
-	alc070004041: display@2 {
-		bits-per-pixel = <16>;
-		bus-width = <18>;
-
-		display-timings {
-			native-mode = <&timing0>;
-			timing2: timing2 {
-				clock-frequency = <27000000>;
-				hactive = <1280>;
-				vactive = <800>;
-				hfront-porch = <90>;
-				hback-porch = <0>;
-				hsync-len = <10>;
-				vback-porch = <15>;
-				vfront-porch = <0>;
-				vsync-len = <5>;
-				hsync-active = <1>;
-				vsync-active = <1>;
-				de-active = <1>;
-				pixelclk-active = <0>;
-			};
-		};
-	};
-
-	g101evn010: display@3 {
-		bits-per-pixel = <16>;
-		bus-width = <18>;
-
-		display-timings {
-			native-mode = <&timing0>;
-			timing3: timing3 {
-				clock-frequency = <68930000>;
-				hactive = <1280>;
-				vactive = <800>;
-				hfront-porch = <120>;
-				hback-porch = <0>;
-				hsync-len = <8>;
-				vback-porch = <10>;
-				vfront-porch = <0>;
-				vsync-len = <6>;
-				hsync-active = <1>;
-				vsync-active = <1>;
-				de-active = <1>;
-				pixelclk-active = <0>;
-			};
-		};
-	};
 };
 
 /* Powers BU90T82 LVDS bridge at 1.8V */
 &ldo4_ext {
 	regulator-max-microvolt = <1800000>;
-};
-
-&pwm1 {
-	status = "disabled";
-};
-
-&pwm2 {
-	status = "disabled";
-};
-
-&pwm3 {
-	status = "disabled";
-};
-
-&pwm4 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_pwm4>;
-	clocks = <&clks IMX6UL_CLK_PWM4>,
-		<&clks IMX6UL_CLK_PWM4>;
-	status = "disabled";
 };
 
 /* LCD backlight */
@@ -351,18 +255,6 @@
 	pinctrl-0 = <&pinctrl_pwm5>;
 	clocks = <&clks IMX6UL_CLK_PWM5>,
 		 <&clks IMX6UL_CLK_PWM5>;
-	status = "disabled";
-};
-
-&pwm6 {
-	status = "disabled";
-};
-
-&pwm7 {
-	status = "disabled";
-};
-
-&pwm8 {
 	status = "disabled";
 };
 
@@ -426,7 +318,6 @@
 
 &iomuxc {
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_hog>;
 
 	imx6ul-ccimx6ul {
 		pinctrl_csi: csigrp {
@@ -446,21 +337,12 @@
 			>;
 		};
 
-		pinctrl_ecspi1_master: ecspi1grp1 {
+		pinctrl_ecspi1: ecspi1grp {
 			fsl,pins = <
 				MX6UL_PAD_LCD_DATA20__ECSPI1_SCLK	0x10b0
 				MX6UL_PAD_LCD_DATA22__ECSPI1_MOSI	0x10b0
 				MX6UL_PAD_LCD_DATA23__ECSPI1_MISO	0x10b0
 				MX6UL_PAD_LCD_DATA21__GPIO3_IO26	0x10b0 /* Chip Select */
-			>;
-		};
-
-		pinctrl_ecspi1_slave: ecspi1grp2 {
-			fsl,pins = <
-				MX6UL_PAD_LCD_DATA20__ECSPI1_SCLK	0x10b0
-				MX6UL_PAD_LCD_DATA22__ECSPI1_MOSI	0x10b0
-				MX6UL_PAD_LCD_DATA23__ECSPI1_MISO	0x10b0
-				MX6UL_PAD_LCD_DATA21__ECSPI1_SS0	0x10b0 /* Chip Select */
 			>;
 		};
 
@@ -473,7 +355,7 @@
 				MX6UL_PAD_ENET1_TX_EN__ENET1_TX_EN	0x1b0b0
 				MX6UL_PAD_ENET1_TX_DATA0__ENET1_TDATA00	0x1b0b0
 				MX6UL_PAD_ENET1_TX_DATA1__ENET1_TDATA01	0x1b0b0
-				MX6UL_PAD_ENET1_TX_CLK__ENET1_REF_CLK1	0x40017051
+				MX6UL_PAD_ENET1_TX_CLK__ENET1_REF_CLK1	0x4001b031
 			>;
 		};
 
@@ -486,7 +368,7 @@
 				MX6UL_PAD_ENET2_TX_EN__ENET2_TX_EN	0x1b0b0
 				MX6UL_PAD_ENET2_TX_DATA0__ENET2_TDATA00	0x1b0b0
 				MX6UL_PAD_ENET2_TX_DATA1__ENET2_TDATA01	0x1b0b0
-				MX6UL_PAD_ENET2_TX_CLK__ENET2_REF_CLK2	0x40017051
+				MX6UL_PAD_ENET2_TX_CLK__ENET2_REF_CLK2	0x4001b031
 			>;
 		};
 
@@ -527,7 +409,7 @@
 
 		pinctrl_fusion_touch: fusiongrp{
 			fsl,pins = <
-				MX6UL_PAD_SNVS_TAMPER2__GPIO5_IO02	0x3000
+				MX6UL_PAD_SNVS_TAMPER2__GPIO5_IO02	0x80000000
 			>;
 		};
 
@@ -582,12 +464,6 @@
 		pinctrl_lcdif_reset: lcdifctrlgrp3 {
 			fsl,pins = <
 				MX6UL_PAD_LCD_RESET__LCDIF_RESET	0x79
-			>;
-		};
-
-		pinctrl_pwm4: pwm4grp {
-			fsl,pins = <
-				MX6UL_PAD_GPIO1_IO05__PWM4_OUT          0x110b0
 			>;
 		};
 
@@ -695,10 +571,6 @@
 				MX6UL_PAD_GPIO1_IO04__GPIO1_IO04	0x17059 /* USBOTG1 PWR */
 				MX6UL_PAD_GPIO1_IO01__USB_OTG1_OC	0x17059
 			>;
-		};
-
-		/* General purpose pinctrl */
-		pinctrl_hog: hoggrp {
 		};
 	};
 };

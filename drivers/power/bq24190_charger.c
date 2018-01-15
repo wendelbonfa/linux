@@ -1389,13 +1389,22 @@ static int bq24190_probe(struct i2c_client *client,
 		return -EINVAL;
 	}
 
+	ret = devm_request_threaded_irq(dev, bdi->irq, NULL,
+			bq24190_irq_handler_thread,
+			IRQF_TRIGGER_RISING | IRQF_ONESHOT,
+			"bq24190-charger", bdi);
+	if (ret < 0) {
+		dev_err(dev, "Can't set up irq handler\n");
+		goto out1;
+	}
+
 	pm_runtime_enable(dev);
 	pm_runtime_resume(dev);
 
 	ret = bq24190_hw_init(bdi);
 	if (ret < 0) {
 		dev_err(dev, "Hardware init failed\n");
-		goto out1;
+		goto out2;
 	}
 
 	charger_cfg.drv_data = bdi;
@@ -1406,7 +1415,7 @@ static int bq24190_probe(struct i2c_client *client,
 	if (IS_ERR(bdi->charger)) {
 		dev_err(dev, "Can't register charger\n");
 		ret = PTR_ERR(bdi->charger);
-		goto out1;
+		goto out2;
 	}
 
 	battery_cfg.drv_data = bdi;
@@ -1415,34 +1424,24 @@ static int bq24190_probe(struct i2c_client *client,
 	if (IS_ERR(bdi->battery)) {
 		dev_err(dev, "Can't register battery\n");
 		ret = PTR_ERR(bdi->battery);
-		goto out2;
+		goto out3;
 	}
 
 	ret = bq24190_sysfs_create_group(bdi);
 	if (ret) {
 		dev_err(dev, "Can't create sysfs entries\n");
-		goto out3;
-	}
-
-	ret = devm_request_threaded_irq(dev, bdi->irq, NULL,
-			bq24190_irq_handler_thread,
-			IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
-			"bq24190-charger", bdi);
-	if (ret < 0) {
-		dev_err(dev, "Can't set up irq handler\n");
 		goto out4;
 	}
 
 	return 0;
 
 out4:
-	bq24190_sysfs_remove_group(bdi);
-out3:
 	power_supply_unregister(bdi->battery);
-out2:
+out3:
 	power_supply_unregister(bdi->charger);
-out1:
+out2:
 	pm_runtime_disable(dev);
+out1:
 	if (bdi->gpio_int)
 		gpio_free(bdi->gpio_int);
 
@@ -1492,7 +1491,6 @@ static int bq24190_pm_resume(struct device *dev)
 
 	pm_runtime_get_sync(bdi->dev);
 	bq24190_register_reset(bdi);
-	bq24190_set_mode_host(bdi);
 	pm_runtime_put_sync(bdi->dev);
 
 	/* Things may have changed while suspended so alert upper layer */

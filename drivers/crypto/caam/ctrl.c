@@ -260,8 +260,7 @@ static int deinstantiate_rng(struct device *ctrldev, int state_handle_mask)
 			/* Try to run it through DECO0 */
 			ret = run_descriptor_deco0(ctrldev, desc, &status);
 
-			if (ret ||
-			    (status && status != JRSTA_SSRC_JUMP_HALT_CC)) {
+			if (ret || status) {
 				dev_err(ctrldev,
 					"Failed to deinstantiate RNG4 SH%d\n",
 					sh_idx);
@@ -713,14 +712,6 @@ static int caam_probe(struct platform_device *pdev)
 	if ((cha_vid_ls & CHA_ID_LS_RNG_MASK) >> CHA_ID_LS_RNG_SHIFT >= 4) {
 		ctrlpriv->rng4_sh_init =
 			rd_reg32(&ctrl->r4tst[0].rdsta);
-
-		/* verify if the RNG was already initialized */
-		if (ctrlpriv->rng4_sh_init) {
-			deinstantiate_rng(dev, ctrlpriv->rng4_sh_init);
-			ctrlpriv->rng4_sh_init =
-				rd_reg32(&ctrl->r4tst[0].rdsta);
-		}
-
 		/*
 		 * If the secure keys (TDKEK, JDKEK, TDSK), were already
 		 * generated, signal this to the function that is instantiating

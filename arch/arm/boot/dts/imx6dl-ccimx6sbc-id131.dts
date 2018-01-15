@@ -66,11 +66,6 @@
 	};
 };
 
-/* PWM1 on pin 10 of LCD connector */
-&pwm1 {
-	status = "okay";
-};
-
 &uart1 {
 	status = "okay";
 };
@@ -101,8 +96,4 @@
 
 &usdhc2 {
 	status = "okay";
-};
-
-&v4l2_out {
-        status = "okay";
 };

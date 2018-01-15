@@ -1,5 +1,5 @@
 /*
- *  Copyright 2016, 2017 Digi International Inc
+ *  Copyright 2016 Digi International Inc
  *
  *  This program is free software; you can redistribute  it and/or modify it
  *  under  the terms of  the GNU General  Public License as published by the
@@ -16,8 +16,8 @@
 #include <linux/err.h>
 
 #include <linux/mfd/core.h>
-#include <linux/mfd/mca-common/core.h>
 #include <linux/mfd/mca-cc6ul/core.h>
+#include <linux/mfd/mca-cc6ul/registers.h>
 
 #include <linux/of.h>
 #include <linux/regulator/of_regulator.h>
@@ -33,22 +33,11 @@ static const struct regmap_range mca_cc6ul_writeable_ranges[] = {
 	regmap_reg_range(MCA_CC6UL_CTRL_0, MCA_CC6UL_CTRL_0),
 	regmap_reg_range(MCA_CC6UL_TAMPER0_CFG0, MCA_CC6UL_TAMPER0_EVENT),
 	regmap_reg_range(MCA_CC6UL_TAMPER1_CFG0, MCA_CC6UL_TAMPER1_EVENT),
-	regmap_reg_range(MCA_CC6UL_TAMPER2_CFG0, MCA_CC6UL_TAMPER2_THRESH_HI_H),
-	regmap_reg_range(MCA_CC6UL_TAMPER3_CFG0, MCA_CC6UL_TAMPER3_THRESH_HI_H),
 	regmap_reg_range(MCA_CC6UL_RTC_CONTROL, MCA_CC6UL_RTC_CONTROL),
 	regmap_reg_range(MCA_CC6UL_RTC_COUNT_YEAR_L, MCA_CC6UL_RTC_ALARM_SEC),
 	regmap_reg_range(MCA_CC6UL_WDT_CONTROL, MCA_CC6UL_WDT_REFRESH_3),
-	regmap_reg_range(MCA_GPIO_DIR_0, MCA_GPIO_IRQ_CFG_63),
-	regmap_reg_range(MCA_REG_ADC_CFG0_0, MCA_REG_ADC_CFG0_7),
-	regmap_reg_range(MCA_REG_ADC_CFG1_0, MCA_REG_ADC_CFG1_7),
-	regmap_reg_range(MCA_REG_ADC_CFG2_0, MCA_REG_ADC_CFG2_7),
-	regmap_reg_range(MCA_REG_ADC_SAMPLES_CNT_0, MCA_REG_ADC_SAMPLES_CNT_7),
-	regmap_reg_range(MCA_REG_ADC_THRESH_LO_L_0, MCA_REG_ADC_THRESH_LO_H_7),
-	regmap_reg_range(MCA_REG_ADC_THRESH_HI_L_0, MCA_REG_ADC_THRESH_HI_H_7),
-	regmap_reg_range(MCA_REG_ADC_TICKS_L_0, MCA_REG_ADC_TICKS_H_7),
-	regmap_reg_range(MCA_REG_ADC_IRQ_0, MCA_REG_ADC_IRQ_7),
-	regmap_reg_range(MCA_REG_ADC_CFG_0, MCA_REG_ADC_CFG_2),
-	regmap_reg_range(MCA_REG_ADC_BUFF_CH, MCA_REG_ADC_BUFF_SAMPLE_7),
+	regmap_reg_range(MCA_CC6UL_GPIO_DIR_0, MCA_CC6UL_GPIO_IRQ_CFG_63),
+	regmap_reg_range(MCA_REG_ADC_CFG_0, MCA_REG_ADC_CFG_7),
 };
 
 static const struct regmap_range mca_cc6ul_volatile_ranges[] = {
@@ -56,12 +45,10 @@ static const struct regmap_range mca_cc6ul_volatile_ranges[] = {
 	regmap_reg_range(MCA_CC6UL_IRQ_STATUS_0, MCA_CC6UL_IRQ_STATUS_3),
 	regmap_reg_range(MCA_CC6UL_TAMPER0_DATE_START, MCA_CC6UL_TAMPER0_EVENT),
 	regmap_reg_range(MCA_CC6UL_TAMPER1_DATE_START, MCA_CC6UL_TAMPER1_EVENT),
-	regmap_reg_range(MCA_CC6UL_TAMPER2_DATE_START, MCA_CC6UL_TAMPER2_EVENT),
-	regmap_reg_range(MCA_CC6UL_TAMPER3_DATE_START, MCA_CC6UL_TAMPER3_EVENT),
 	regmap_reg_range(MCA_CC6UL_TIMER_TICK_0, MCA_CC6UL_TIMER_TICK_3),
 	regmap_reg_range(MCA_CC6UL_RTC_COUNT_YEAR_L, MCA_CC6UL_RTC_COUNT_SEC),
-	regmap_reg_range(MCA_GPIO_DATA_0, MCA_GPIO_DATA_7),
-	regmap_reg_range(MCA_GPIO_IRQ_STATUS_0, MCA_GPIO_IRQ_STATUS_7),
+	regmap_reg_range(MCA_CC6UL_GPIO_DATA_0, MCA_CC6UL_GPIO_DATA_7),
+	regmap_reg_range(MCA_CC6UL_GPIO_IRQ_STATUS_0, MCA_CC6UL_GPIO_IRQ_STATUS_7),
 	regmap_reg_range(MCA_CC6UL_PWR_CTRL_0, MCA_CC6UL_PWR_STATUS_0),
 	regmap_reg_range(MCA_REG_ADC_VAL_L_0, MCA_REG_ADC_VAL_H_7),
 
@@ -83,24 +70,13 @@ static const struct regmap_range mca_cc6ul_volatile_ranges[] = {
 	regmap_reg_range(MCA_CC6UL_CTRL_0, MCA_CC6UL_CTRL_0),
 	regmap_reg_range(MCA_CC6UL_TAMPER0_CFG0, MCA_CC6UL_TAMPER0_DELAY_PWROFF),
 	regmap_reg_range(MCA_CC6UL_TAMPER1_CFG0, MCA_CC6UL_TAMPER1_DELAY_PWROFF),
-	regmap_reg_range(MCA_CC6UL_TAMPER2_CFG0, MCA_CC6UL_TAMPER2_THRESH_HI_H),
-	regmap_reg_range(MCA_CC6UL_TAMPER3_CFG0, MCA_CC6UL_TAMPER3_THRESH_HI_H),
 	regmap_reg_range(MCA_CC6UL_RTC_CONTROL, MCA_CC6UL_RTC_CONTROL),
 	regmap_reg_range(MCA_CC6UL_RTC_ALARM_YEAR_L, MCA_CC6UL_RTC_ALARM_SEC),
 	regmap_reg_range(MCA_CC6UL_WDT_CONTROL, MCA_CC6UL_WDT_TIMEOUT),
-	regmap_reg_range(MCA_GPIO_NUM, MCA_GPIO_DIR_7),
-	regmap_reg_range(MCA_GPIO_IRQ_CFG_0, MCA_GPIO_IRQ_CFG_63),
+	regmap_reg_range(MCA_CC6UL_GPIO_NUM, MCA_CC6UL_GPIO_DIR_7),
+	regmap_reg_range(MCA_CC6UL_GPIO_IRQ_CFG_0, MCA_CC6UL_GPIO_IRQ_CFG_63),
 	regmap_reg_range(MCA_REG_ADC_NUM_CH, MCA_REG_ADC_NUM_BYTES),
-	regmap_reg_range(MCA_REG_ADC_CFG0_0, MCA_REG_ADC_CFG0_7),
-	regmap_reg_range(MCA_REG_ADC_CFG1_0, MCA_REG_ADC_CFG1_7),
-	regmap_reg_range(MCA_REG_ADC_CFG2_0, MCA_REG_ADC_CFG2_7),
-	regmap_reg_range(MCA_REG_ADC_SAMPLES_CNT_0, MCA_REG_ADC_SAMPLES_CNT_7),
-	regmap_reg_range(MCA_REG_ADC_THRESH_LO_L_0, MCA_REG_ADC_THRESH_LO_H_7),
-	regmap_reg_range(MCA_REG_ADC_THRESH_HI_L_0, MCA_REG_ADC_THRESH_HI_H_7),
-	regmap_reg_range(MCA_REG_ADC_TICKS_L_0, MCA_REG_ADC_TICKS_H_7),
-	regmap_reg_range(MCA_REG_ADC_IRQ_0, MCA_REG_ADC_IRQ_7),
-	regmap_reg_range(MCA_REG_ADC_CFG_0, MCA_REG_ADC_CFG_2),
-	regmap_reg_range(MCA_REG_ADC_BUFF_CH, MCA_REG_ADC_BUFF_SAMPLE_7),
+	regmap_reg_range(MCA_REG_ADC_CFG_0, MCA_REG_ADC_CFG_7),
 };
 
 static const struct regmap_access_table mca_cc6ul_readable_table = {

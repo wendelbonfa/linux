@@ -480,8 +480,6 @@ static int __test_aead(struct crypto_aead *tfm, int enc,
 	aead_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
 				  tcrypt_complete, &result);
 
-	iv_len = crypto_aead_ivsize(tfm);
-
 	for (i = 0, j = 0; i < tcount; i++) {
 		if (template[i].np)
 			continue;
@@ -502,6 +500,7 @@ static int __test_aead(struct crypto_aead *tfm, int enc,
 
 		memcpy(input, template[i].input, template[i].ilen);
 		memcpy(assoc, template[i].assoc, template[i].alen);
+		iv_len = crypto_aead_ivsize(tfm);
 		if (template[i].iv)
 			memcpy(iv, template[i].iv, iv_len);
 		else
@@ -606,7 +605,7 @@ static int __test_aead(struct crypto_aead *tfm, int enc,
 		j++;
 
 		if (template[i].iv)
-			memcpy(iv, template[i].iv, iv_len);
+			memcpy(iv, template[i].iv, MAX_IVLEN);
 		else
 			memset(iv, 0, MAX_IVLEN);
 
@@ -1909,18 +1908,6 @@ static const struct alg_test_desc alg_test_descs[] = {
 			.cprng = {
 				.vecs = ansi_cprng_aes_tv_template,
 				.count = ANSI_CPRNG_AES_TEST_VECTORS
-			}
-		}
-	}, {
-		.alg = "authenc(hmac(md5),cbc(aes))",
-		.test = alg_test_aead,
-		.fips_allowed = 1,
-		.suite = {
-			.aead = {
-				.enc = {
-				  .vecs = hmac_md5_aes_cbc_enc_tv_template,
-				  .count = HMAC_MD5_AES_CBC_ENC_TEST_VECTORS
-				}
 			}
 		}
 	}, {

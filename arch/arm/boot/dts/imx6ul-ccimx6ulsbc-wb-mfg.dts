@@ -50,11 +50,6 @@
 
 /* Parallel LCD */
 &lcdif {
-	pinctrl-0 = <&pinctrl_lcdif_dat0_17
-		     &pinctrl_lcdif_clken
-		     &pinctrl_lcdif_hvsync>;
-	lcd-supply = <&ldo4_ext>;       /* BU90T82 LVDS bridge power */
-	display = <&f10a0102>;
 	status = "okay";
 };
 
@@ -63,25 +58,7 @@
 	status = "okay";
 };
 
-/* Audio chip */
-&max98089 {
-	status = "okay";
-};
-
-&mca_ioexp {
-	status = "okay";
-	restore-config-on-resume;
-};
-
 &pwm5 {
-	status = "okay";
-};
-
-&sai2 {
-	status = "okay";
-};
-
-&sound_max98089 {
 	status = "okay";
 };
 

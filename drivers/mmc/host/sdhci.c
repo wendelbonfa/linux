@@ -1266,9 +1266,7 @@ clock_set:
 			return;
 		}
 		timeout--;
-		spin_unlock_irq(&host->lock);
-		usleep_range(900, 1100);
-		spin_lock_irq(&host->lock);
+		mdelay(1);
 	}
 
 	clk |= SDHCI_CLOCK_CARD_EN;
@@ -2641,8 +2639,7 @@ static irqreturn_t sdhci_irq(int irq, void *dev_id)
 		if (intmask & SDHCI_INT_RETUNE)
 			mmc_retune_needed(host->mmc);
 
-		if ((intmask & SDHCI_INT_CARD_INT) &&
-		    (host->ier & SDHCI_INT_CARD_INT)) {
+		if (intmask & SDHCI_INT_CARD_INT) {
 			if (host->mmc->caps2 & MMC_CAP2_SDIO_IRQ_NOTHREAD) {
 				sdhci_enable_sdio_irq_nolock(host, false);
 				host->thread_isr |= SDHCI_INT_CARD_INT;

@@ -34,6 +34,7 @@
 #include <linux/fb.h>
 #include <linux/dma-mapping.h>
 #include <linux/delay.h>
+#include <linux/mutex.h>
 #include <linux/mxcfb.h>
 #include <linux/of_device.h>
 #include <media/v4l2-chip-ident.h>

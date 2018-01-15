@@ -23,8 +23,8 @@
 #include <linux/uaccess.h>
 #include <linux/reboot.h>
 
-#include <linux/mfd/mca-common/core.h>
 #include <linux/mfd/mca-cc6ul/core.h>
+#include <linux/mfd/mca-cc6ul/registers.h>
 
 #include <asm/unaligned.h>
 
@@ -81,15 +81,6 @@ static struct resource mca_cc6ul_pwrkey_resources[] = {
 	},
 };
 
-static struct resource mca_cc6ul_adc_resources[] = {
-	{
-		.name   = MCA_CC6UL_IRQ_ADC_NAME,
-		.start  = MCA_CC6UL_IRQ_ADC,
-		.end    = MCA_CC6UL_IRQ_ADC,
-		.flags  = IORESOURCE_IRQ,
-	},
-};
-
 static struct resource mca_cc6ul_tamper_resources[] = {
 	{
 		.name   = MCA_CC6UL_IRQ_TAMPER0_NAME,
@@ -103,23 +94,11 @@ static struct resource mca_cc6ul_tamper_resources[] = {
 		.end    = MCA_CC6UL_IRQ_TAMPER1,
 		.flags  = IORESOURCE_IRQ,
 	},
-	{
-		.name   = MCA_CC6UL_IRQ_TAMPER2_NAME,
-		.start  = MCA_CC6UL_IRQ_TAMPER2,
-		.end    = MCA_CC6UL_IRQ_TAMPER2,
-		.flags  = IORESOURCE_IRQ,
-	},
-	{
-		.name   = MCA_CC6UL_IRQ_TAMPER3_NAME,
-		.start  = MCA_CC6UL_IRQ_TAMPER3,
-		.end    = MCA_CC6UL_IRQ_TAMPER3,
-		.flags  = IORESOURCE_IRQ,
-	},
 };
 
 static struct resource mca_cc6ul_gpios_resources[] = {
 	{
-		.name   = MCA_IRQ_GPIO_BANK_0_NAME,
+		.name   = MCA_CC6UL_IRQ_GPIOS_BANK0_NAME,
 		.start  = MCA_CC6UL_IRQ_GPIO_BANK_0,
 		.end    = MCA_CC6UL_IRQ_GPIO_BANK_0,
 		.flags  = IORESOURCE_IRQ,
@@ -154,8 +133,6 @@ static const struct mfd_cell mca_cc6ul_devs[] = {
 	{
 		.name           = MCA_CC6UL_DRVNAME_ADC,
 		.of_compatible = "digi,mca-cc6ul-adc",
-		.num_resources  = ARRAY_SIZE(mca_cc6ul_adc_resources),
-		.resources      = mca_cc6ul_adc_resources,
 	},
 	{
 		.name           = MCA_CC6UL_DRVNAME_TAMPER,
@@ -486,73 +463,44 @@ int mca_cc6ul_resume(struct device *dev)
 				  0);
 }
 
-#define MCA_MAX_PWROFF_TRIES 5
 static void mca_cc6ul_power_off(void)
 {
-	int try = 0;
-	int ret;
-
 	if (!pmca) {
-		printk(KERN_ERR "ERROR: unable to power off [%s:%d/%s()]!\n",
+		printk("ERROR: unable to power off [%s:%d/%s()]!\n",
 		       __FILE__, __LINE__, __func__);
 		return;
 	}
 
-	do {
-		/* Set power off bit in PWR_CTRL_0 register to shutdown */
-		ret = regmap_update_bits(pmca->regmap, MCA_CC6UL_PWR_CTRL_0,
-					 MCA_CC6UL_PWR_GO_OFF,
-					 MCA_CC6UL_PWR_GO_OFF);
-		if (ret)
-			printk(KERN_ERR "ERROR: accesing PWR_CTRL_0 register "
-			       "[%s:%d/%s()]!\n", __FILE__, __LINE__, __func__);
+	/* Set power off bit in PWR_CTRL_0 register to shutdown */
+	regmap_update_bits(pmca->regmap, MCA_CC6UL_PWR_CTRL_0,
+			   MCA_CC6UL_PWR_GO_OFF, MCA_CC6UL_PWR_GO_OFF);
 
-		/*
-		 * Even if the regmap update returned with success, retry...
-		 * we are powering off, so there is nothing bad by doing it.
-		 */
-		mdelay(50);
-	} while (++try < MCA_MAX_PWROFF_TRIES);
-
-	/* Print a warning and return, so at least userland can log the issue */
-	printk(KERN_ERR "ERROR: unable to power off [%s:%d/%s()]!\n",
-	       __FILE__, __LINE__, __func__);
+	/* And That's All Folks... */
+	while (1) ;
 }
 
-#define MCA_MAX_RESET_TRIES 5
 static int mca_cc6ul_restart_handler(struct notifier_block *nb,
 				     unsigned long mode, void *cmd)
 {
 	int ret;
-	int try = 0;
 	struct mca_cc6ul *mca = container_of(nb, struct mca_cc6ul,
 					     restart_handler);
 	const uint8_t unlock_pattern[] = {'C', 'T', 'R', 'U'};
 
-	do {
-		ret = regmap_bulk_write(mca->regmap, MCA_CC6UL_CTRL_UNLOCK_0,
-					unlock_pattern, sizeof(unlock_pattern));
-		if (ret) {
-			dev_err(mca->dev, "failed to unlock ctrl regs (%d)\n",
-				ret);
-			goto reset_retry;
-		}
+	ret = regmap_bulk_write(mca->regmap, MCA_CC6UL_CTRL_UNLOCK_0,
+				unlock_pattern, sizeof(unlock_pattern));
+	if (ret) {
+		/* Hopefully other registered restart handler can do it... */
+		dev_warn(mca->dev, "failed to unlock CTRL registers (%d)\n",
+			 ret);
+		return NOTIFY_DONE;
+	}
 
-		ret = regmap_write(pmca->regmap, MCA_CC6UL_CTRL_0,
-				   MCA_CC6UL_RESET);
-		if (ret)
-			dev_err(mca->dev, "failed to reset (%d)\n", ret);
-
-		/*
-		 * The MCA will reset the cpu, so the retry should not happen...
-		 * and if it happens, something went wrong, and retrying is the
-		 * right thing to do.
-		 */
-reset_retry:
-		mdelay(10);
-	} while (++try < MCA_MAX_RESET_TRIES);
-
-	dev_err(mca->dev, "failed to reboot!\n");
+	/*
+	 * Set reset bit in CTRL_0 register to reboot. As IRQs are disabled, we
+	 * don't use regmap_update_bits, just write
+	 */
+	regmap_write(pmca->regmap, MCA_CC6UL_CTRL_0, MCA_CC6UL_RESET);
 
 	return NOTIFY_DONE;
 }
@@ -682,12 +630,19 @@ int mca_cc6ul_device_init(struct mca_cc6ul *mca, u32 irq)
 		goto out_sysfs_remove;
 	}
 
+	ret = mca_cc6ul_debug_init(mca);
+	if (ret) {
+		dev_err(mca->dev, "Cannot create sysfs debug entries (%d)\n",
+			ret);
+		goto out_sysfs_remove;
+	}
+
 	pmca = mca;
 
 	if (pm_power_off != NULL) {
 		dev_err(mca->dev, "pm_power_off function already registered\n");
 		ret = -EBUSY;
-		goto out_sysfs_remove;
+		goto out_debug_remove;
 	}
 	pm_power_off = mca_cc6ul_power_off;
 
@@ -722,8 +677,10 @@ out_fn_ptrs2:
 	imx6_board_pm_end = NULL;
 out_fn_ptrs:
 	pm_power_off = NULL;
-out_sysfs_remove:
+out_debug_remove:
 	pmca = NULL;
+	mca_cc6ul_debug_exit(mca);
+out_sysfs_remove:
 	sysfs_remove_group(&mca->dev->kobj, &mca_cc6ul_attr_group);
 out_dev:
 	mfd_remove_devices(mca->dev);
@@ -740,6 +697,7 @@ void mca_cc6ul_device_exit(struct mca_cc6ul *mca)
 	imx6_board_pm_end = NULL;
 	pm_power_off = NULL;
 	pmca = NULL;
+	mca_cc6ul_debug_exit(mca);
 	sysfs_remove_group(&mca->dev->kobj, &mca_cc6ul_attr_group);
 	mfd_remove_devices(mca->dev);
 	mca_cc6ul_irq_exit(mca);

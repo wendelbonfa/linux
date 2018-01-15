@@ -182,7 +182,7 @@ static void fusion_wq(struct work_struct *work)
 	int x1 = 0, y1 = 0, z1 = 0, x2 = 0, y2 = 0, z2 = 0;
 
 	if (fusion_read_sensor() < 0)
-		goto out;
+		return;
 
 	dev_dbg(&fusion.client->dev,"tip1, tid1, x1, y1, z1 (%x,%x,%d,%d,%d); tip2, tid2, x2, y2, z2 (%x,%x,%d,%d,%d)\n",
 		fusion.tip1, fusion.tid1, fusion.x1, fusion.y1, fusion.z1,
@@ -256,7 +256,6 @@ static void fusion_wq(struct work_struct *work)
 
 	input_sync(dev);
 
-out:
 	enable_irq(fusion.client->irq);
 
 }
@@ -288,16 +287,6 @@ static int fusion_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
 	{
 		dev_err(&i2c->dev, "fusion irq < 0 \n");
 		ret = -ENOMEM;
-		goto bail1;
-	}
-
-	/* Prevent registering the same controller twice */
-	if (fusion.workq) {
-		printk(KERN_INFO
-			"Fusion: Touchscreen already registered with bus id (%d) with slave address 0x%x\n",
-			i2c_adapter_id(fusion.client->adapter),
-			fusion.client->addr);
-		ret = -EBUSY;
 		goto bail1;
 	}
 

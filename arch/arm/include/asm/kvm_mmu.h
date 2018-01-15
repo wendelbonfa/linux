@@ -161,6 +161,8 @@ static inline bool kvm_page_empty(void *ptr)
 #define kvm_pmd_table_empty(kvm, pmdp) kvm_page_empty(pmdp)
 #define kvm_pud_table_empty(kvm, pudp) (0)
 
+#define KVM_PREALLOC_LEVEL	0
+
 static inline void *kvm_get_hwpgd(struct kvm *kvm)
 {
 	return kvm->arch.pgd;
@@ -169,15 +171,6 @@ static inline void *kvm_get_hwpgd(struct kvm *kvm)
 static inline unsigned int kvm_get_hwpgd_size(void)
 {
 	return PTRS_PER_S2_PGD * sizeof(pgd_t);
-}
-
-static inline pgd_t *kvm_setup_fake_pgd(pgd_t *hwpgd)
-{
-	return hwpgd;
-}
-
-static inline void kvm_free_fake_pgd(pgd_t *pgd)
-{
 }
 
 struct kvm;
@@ -211,12 +204,18 @@ static inline void __coherent_cache_guest_page(struct kvm_vcpu *vcpu, pfn_t pfn,
 	 * and iterate over the range.
 	 */
 
+	bool need_flush = !vcpu_has_cache_enabled(vcpu) || ipa_uncached;
+
 	VM_BUG_ON(size & ~PAGE_MASK);
+
+	if (!need_flush && !icache_is_pipt())
+		goto vipt_cache;
 
 	while (size) {
 		void *va = kmap_atomic_pfn(pfn);
 
-		kvm_flush_dcache_to_poc(va, PAGE_SIZE);
+		if (need_flush)
+			kvm_flush_dcache_to_poc(va, PAGE_SIZE);
 
 		if (icache_is_pipt())
 			__cpuc_coherent_user_range((unsigned long)va,
@@ -228,6 +227,7 @@ static inline void __coherent_cache_guest_page(struct kvm_vcpu *vcpu, pfn_t pfn,
 		kunmap_atomic(va);
 	}
 
+vipt_cache:
 	if (!icache_is_pipt() && !icache_is_vivt_asid_tagged()) {
 		/* any kind of VIPT cache */
 		__flush_icache_all();

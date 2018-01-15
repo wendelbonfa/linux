@@ -565,11 +565,9 @@ static ssize_t show_cpuinfo_cur_freq(struct cpufreq_policy *policy,
 					char *buf)
 {
 	unsigned int cur_freq = __cpufreq_get(policy);
-
-	if (cur_freq)
-		return sprintf(buf, "%u\n", cur_freq);
-
-	return sprintf(buf, "<unknown>\n");
+	if (!cur_freq)
+		return sprintf(buf, "<unknown>");
+	return sprintf(buf, "%u\n", cur_freq);
 }
 
 /**
@@ -2462,7 +2460,6 @@ int cpufreq_register_driver(struct cpufreq_driver *driver_data)
 	if (!(cpufreq_driver->flags & CPUFREQ_STICKY) &&
 	    list_empty(&cpufreq_policy_list)) {
 		/* if all ->init() calls failed, unregister */
-		ret = -ENODEV;
 		pr_debug("%s: No CPU initialized for driver %s\n", __func__,
 			 driver_data->name);
 		goto err_if_unreg;

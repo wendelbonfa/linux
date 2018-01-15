@@ -345,12 +345,14 @@ static inline void flexcan_exit_stop_mode(struct flexcan_priv *priv)
 
 static inline int flexcan_transceiver_enable(const struct flexcan_priv *priv)
 {
-	if (gpio_is_valid(priv->stby_gpio))
-		gpio_set_value_cansleep(priv->stby_gpio, 0);
-
-	if (priv->pdata && priv->pdata->transceiver_switch) {
-		priv->pdata->transceiver_switch(1);
-		return 0;
+	if (priv->pdata){
+		if(gpio_is_valid(priv->stby_gpio))
+			gpio_set_value_cansleep(priv->stby_gpio, 0);
+	} else {
+		if (priv->pdata && priv->pdata->transceiver_switch) {
+			priv->pdata->transceiver_switch(1);
+			return 0;
+		}
 	}
 
 	if (!priv->reg_xceiver)
@@ -361,12 +363,14 @@ static inline int flexcan_transceiver_enable(const struct flexcan_priv *priv)
 
 static inline int flexcan_transceiver_disable(const struct flexcan_priv *priv)
 {
-	if (gpio_is_valid(priv->stby_gpio))
-		gpio_set_value_cansleep(priv->stby_gpio, 1);
-
-	if (priv->pdata && priv->pdata->transceiver_switch) {
-		priv->pdata->transceiver_switch(0);
-		return 0;
+	if (priv->pdata){
+		if(gpio_is_valid(priv->stby_gpio))
+			gpio_set_value_cansleep(priv->stby_gpio, 1);
+	} else {
+		if (priv->pdata && priv->pdata->transceiver_switch) {
+			priv->pdata->transceiver_switch(0);
+			return 0;
+		}
 	}
 
 	if (!priv->reg_xceiver)
@@ -932,8 +936,6 @@ static int flexcan_chip_start(struct net_device *dev)
 
 	/* save for later use */
 	priv->reg_ctrl_default = reg_ctrl;
-	/* leave interrupts disabled for now */
-	reg_ctrl &= ~FLEXCAN_CTRL_ERR_ALL;
 	netdev_dbg(dev, "%s: writing ctrl=0x%08x", __func__, reg_ctrl);
 	flexcan_write(reg_ctrl, &regs->ctrl);
 
@@ -995,11 +997,8 @@ static int flexcan_chip_start(struct net_device *dev)
 
 	priv->can.state = CAN_STATE_ERROR_ACTIVE;
 
-	/* enable interrupts atomically */
-	disable_irq(dev->irq);
-	flexcan_write(priv->reg_ctrl_default, &regs->ctrl);
+	/* enable FIFO interrupts */
 	flexcan_write(FLEXCAN_IFLAG_DEFAULT, &regs->imask1);
-	enable_irq(dev->irq);
 
 	/* print chip status */
 	netdev_dbg(dev, "%s: reading mcr=0x%08x ctrl=0x%08x\n", __func__,

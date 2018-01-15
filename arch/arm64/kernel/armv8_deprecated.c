@@ -298,8 +298,7 @@ static void register_insn_emulation_sysctl(struct ctl_table *table)
 	"	.quad		1b, 4b\n"			\
 	"	.popsection\n"					\
 	: "=&r" (res), "+r" (data), "=&r" (temp)		\
-	: "r" ((unsigned long)addr), "i" (-EAGAIN),		\
-	  "i" (-EFAULT)						\
+	: "r" (addr), "i" (-EAGAIN), "i" (-EFAULT)		\
 	: "memory")
 
 #define __user_swp_asm(data, addr, res, temp) \

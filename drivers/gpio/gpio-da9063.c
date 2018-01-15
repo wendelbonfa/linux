@@ -156,7 +156,7 @@ static struct gpio_chip reference_gp = {
 	.to_irq = da9063_gpio_to_irq,
 	.can_sleep = 1,
 	.ngpio = 16,
-	.base = 240,
+	.base = -1,
 };
 
 static const struct of_device_id da9063_gpio_dt_ids[] = {
