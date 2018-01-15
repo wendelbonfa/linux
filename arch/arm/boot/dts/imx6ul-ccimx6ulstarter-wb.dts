@@ -28,16 +28,16 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_adc1>;
 	adc-ch-list = <4>;
-	status = "okay";
+	status = "disabled";
 };
 
 &caam_keyblob {
-	status = "okay";
+	status = "disabled";
 };
 
 /* ECSPI3 (as master - Raspberry PI Expansion header) */
 &ecspi3 {
-	status = "okay";
+	status = "disabled";
 
 	/*
 	 * Add your slave devices here. Next is an example of spidev.
@@ -54,7 +54,7 @@
 // &ecspi3 {
 // 	pinctrl-0 = <&pinctrl_ecspi3_slave>;
 // 	spi-slave;
-// 	status = "okay";
+// 	status = "disabled";
 //
 // 	/*
 // 	 * Unique slave node. Property 'compatible' must be set to the
@@ -72,13 +72,13 @@
 };
 
 /* CAN1 (Raspberry PI Expansion header) */
-&flexcan1 {
-	status = "okay";
+&can1 {
+	status = "disabled";
 };
 
 /* I2C2 (Raspberry PI Expansion header and Grove connector) */
 &i2c2 {
-	status = "okay";
+	status = "disabled";
 };
 
 /* MCA IO0 connected to Grove ADC connector */
@@ -96,6 +96,14 @@
 
 /* PWM1 (Raspberry PI Expansion header) */
 &pwm1 {
+	status = "disabled";
+};
+
+/* UART2 */
+&uart2 {
+	/* RTS/CTS lines multiplexed with CAN2 */
+	pinctrl-0 = <&pinctrl_uart2_2wires>;
+	//uart-has-rtscts;
 	status = "okay";
 };
 

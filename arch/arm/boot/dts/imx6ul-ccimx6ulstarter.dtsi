@@ -13,6 +13,10 @@
 	model = "Digi International ConnectCore 6UL Starter Board.";
 	compatible = "digi,ccimx6ulstarter", "digi,ccimx6ul", "fsl,imx6ul";
 	digi,machine,name = "ccimx6ulstarter";
+	
+	xbee {
+		digi,reset-gpio = <&mca_ioexp_gpio 7 GPIO_ACTIVE_HIGH>;
+	};
 };
 
 /* ECSPI3 (Raspberry PI Expansion header) */
@@ -20,7 +24,7 @@
 	fsl,spi-num-chipselects = <1>;
 	cs-gpios = <&gpio1 20 GPIO_ACTIVE_LOW>;
 	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_ecspi3_master>;
+	//pinctrl-0 = <&pinctrl_ecspi3_master>;
 	status = "disabled";
 };
 
@@ -47,7 +51,7 @@
 };
 
 /* CAN1 (Raspberry PI Expansion header) */
-&flexcan1 {
+&can1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_flexcan1>;
 	xceiver-supply = <&ext_3v3>;
@@ -94,6 +98,13 @@
 	status = "disabled";
 };
 
+/* UART2 */
+&uart2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart2_2wires>;
+	status = "disabled";
+};
+
 /* UART4 (Raspberry PI Expansion header) */
 &uart4 {
 	pinctrl-names = "default";
@@ -110,14 +121,14 @@
 
 &usbotg1 {
 	dr_mode = "host";
-	fsl,power-line-polarity-active-high;
+	digi,power-line-active-high;
 	disable-over-current;
 	status = "disabled";
 };
 
 &usbotg2 {
 	dr_mode = "host";
-	fsl,power-line-polarity-active-high;
+	digi,power-line-active-high;
 	disable-over-current;
 	status = "disabled";
 };
@@ -186,6 +197,23 @@
 		pinctrl_pwm1: pwm1grp {
 			fsl,pins = <
 				MX6UL_PAD_LCD_DATA00__PWM1_OUT		0x10b0
+			>;
+		};
+		
+		
+		pinctrl_uart2_2wires: uart2grp_2wires {
+			fsl,pins = <
+				MX6UL_PAD_UART2_TX_DATA__UART2_DCE_TX	0x1b0b1
+				MX6UL_PAD_UART2_RX_DATA__UART2_DCE_RX	0x1b0b1
+			>;
+		};
+		
+		pinctrl_uart2_4wires: uart2grp_4wires {
+			fsl,pins = <
+				MX6UL_PAD_UART2_TX_DATA__UART2_DCE_TX	0x1b0b1
+				MX6UL_PAD_UART2_RX_DATA__UART2_DCE_RX	0x1b0b1
+				MX6UL_PAD_UART2_CTS_B__UART2_DCE_CTS	0x1b0b1
+				MX6UL_PAD_UART2_RTS_B__UART2_DCE_RTS	0x1b0b1
 			>;
 		};
 
