@@ -102,7 +102,7 @@
 /* UART2 */
 &uart2 {
 	/* RTS/CTS lines multiplexed with CAN2 */
-	pinctrl-0 = <&pinctrl_uart2_4wires>;
+	pinctrl-0 = <&pinctrl_uart2_2wires>;
 	uart-has-rtscts;
 	status = "okay";
 };
