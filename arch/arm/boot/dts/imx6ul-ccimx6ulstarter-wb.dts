@@ -106,7 +106,7 @@
 
 /* UART4 (Raspberry PI Expansion header) */
 &uart4 {
-	status = "disabled";
+	status = "okay";
 };
 
 /* UART5 (Console) */
