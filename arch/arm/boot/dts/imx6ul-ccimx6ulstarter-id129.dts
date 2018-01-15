@@ -99,6 +99,14 @@
 	status = "okay";
 };
 
+/* UART2 */
+&uart2 {
+	/* RTS/CTS lines multiplexed with CAN2 */
+	pinctrl-0 = <&pinctrl_uart2_4wires>;
+	uart-has-rtscts;
+	status = "okay";
+};
+
 /* UART4 (Raspberry PI Expansion header) */
 &uart4 {
 	status = "okay";
