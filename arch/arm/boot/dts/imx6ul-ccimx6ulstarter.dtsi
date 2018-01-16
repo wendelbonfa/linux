@@ -13,9 +13,15 @@
 	model = "Digi International ConnectCore 6UL Starter Board.";
 	compatible = "digi,ccimx6ulstarter", "digi,ccimx6ul", "fsl,imx6ul";
 	digi,machine,name = "ccimx6ulstarter";
-	
+			
 	xbee {
 		digi,reset-gpio = <&mca_ioexp_gpio 7 GPIO_ACTIVE_HIGH>;
+		
+		mca_ioexp_gpio: gpio {
+			compatible = "digi,mca-ioexp-gpio";
+			gpio-controller;
+			#gpio-cells = <2>;
+		};
 	};
 };
 
